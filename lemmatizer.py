@@ -212,9 +212,13 @@ def process_line(line, index):
 
 
 def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Использование: python lemmatizer.py input.txt")
+
     index = load_dictionary(DATA_DIR)
-    for line in sys.stdin:
-        print(process_line(line, index))
+    with open(sys.argv[1], encoding="utf-8") as f:
+        for line in f:
+            print(process_line(line, index))
 
 
 if __name__ == "__main__":

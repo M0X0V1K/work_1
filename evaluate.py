@@ -11,6 +11,7 @@ from pathlib import Path
 
 from lemmatizer import DATA_DIR, load_dictionary, process_line, normalize, candidates
 
+unknown_ar = []
 
 def parse_tagged_line(line):
     result = []
@@ -49,6 +50,7 @@ def main():
             total += 1
             if not candidates(token, dictionary):
                 unknown += 1
+                unknown_ar.append(normalize(token))
             good_lemma = lemma == g_lemma
             good_pos = pos == g_pos
             correct_lemmas += good_lemma
@@ -59,6 +61,7 @@ def main():
         raise ValueError("Пустая тестовая выборка")
     print(f"Токенов: {total}")
     print(f"Неизвестных слов: {unknown} ({unknown / total:.1%})")
+    print(f"Список неизвестных слов: {unknown_ar}")
     print(f"Точность лемм: {correct_lemmas / total:.1%}")
     print(f"Точность POS: {correct_pos / total:.1%}")
     print(f"Лемма + POS одновременно: {correct_both / total:.1%}")
