@@ -9,7 +9,8 @@ import re
 import sys
 from pathlib import Path
 
-from lemmatizer import DATA_DIR, load_dictionary, process_line, normalize, candidates
+from lemmatizer_old import DATA_DIR, load_dictionary, process_line, normalize, candidates
+# from lemmatizer_old_old import DATA_DIR, load_dictionary, process_line, normalize, candidates
 
 unknown_ar = []
 
@@ -61,7 +62,7 @@ def main():
         raise ValueError("Пустая тестовая выборка")
     print(f"Токенов: {total}")
     print(f"Неизвестных слов: {unknown} ({unknown / total:.1%})")
-    print(f"Список неизвестных слов: {unknown_ar}")
+    # print(f"Список неизвестных слов: {unknown_ar}")
     print(f"Точность лемм: {correct_lemmas / total:.1%}")
     print(f"Точность POS: {correct_pos / total:.1%}")
     print(f"Лемма + POS одновременно: {correct_both / total:.1%}")

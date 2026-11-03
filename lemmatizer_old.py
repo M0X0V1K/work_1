@@ -92,9 +92,9 @@ def load_dictionary(folder):
     index = defaultdict(list)
 
     for filename, pos in (
-        ("nouns.csv", "S"),
-        ("verbs.csv", "V"),
-        ("adjectives.csv", "A"),
+        ("dict/nouns.csv", "S"),
+        ("dict/verbs.csv", "V"),
+        ("dict/adjectives.csv", "A"),
     ):
         with (folder / filename).open(encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f, delimiter="\t")
@@ -126,7 +126,7 @@ def load_dictionary(folder):
                 if pos == "A" and lemma.endswith("ный"):
                     add(index, lemma[:-2] + "ее", lemma, "A")
 
-    with (folder / "others.csv").open(encoding="utf-8-sig", newline="") as f:
+    with (folder / "dict/others.csv").open(encoding="utf-8-sig", newline="") as f:
         for row in csv.DictReader(f, delimiter="\t"):
             word = normalize(row.get("bare", "").strip())
             if not word:
@@ -159,9 +159,36 @@ def candidates(word, index):
     return index.get(key, [])
 
 
+# Neural OOV fallback is optional: the old rules continue to work until
+# train_rnn.py has produced rnn_oov.pt next to this file.
+_RNN_OOV = None
+_RNN_OOV_INITIALIZED = False
+
+
+def get_rnn_oov():
+    global _RNN_OOV, _RNN_OOV_INITIALIZED
+    if not _RNN_OOV_INITIALIZED:
+        _RNN_OOV_INITIALIZED = True
+        checkpoint = DATA_DIR / "rnn_oov.pt"
+        if checkpoint.is_file():
+            try:
+                from rnn_fallback import OOVPredictor
+                _RNN_OOV = OOVPredictor.load(checkpoint, min_confidence=0.15)
+            except (ImportError, RuntimeError, ValueError, OSError, KeyError) as exc:
+                print(f"Warning: neural OOV model not loaded: {exc}", file=sys.stderr)
+    return _RNN_OOV
+
+
 def unknown_word(word, next_word, index):
     """Если слов нет в словаре, используем `частотные` правила русского языка"""
     w = normalize(word)
+    predictor = get_rnn_oov()
+    if predictor is not None:
+        guess = predictor.predict(w)
+        if guess is not None:
+            lemma, pos, _confidence = guess
+            return lemma, pos
+
     # Притяжательные прилагательные: Гришины одногрупники -> гришин.
     if w.endswith(("ины", "овы", "евы")) and next_word:
         if any(pos == "S" for _, pos in candidates(next_word, index)):
